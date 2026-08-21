@@ -307,6 +307,7 @@ class _TodayContent extends ConsumerWidget {
       await ref.read(scheduleServiceProvider).skipWorkout(entry.date);
 
       await syncWorkoutNotifications(ref);
+      await syncHomeWidget(ref);
 
       if (!context.mounted) {
         return;
@@ -362,6 +363,7 @@ class _TodayContent extends ConsumerWidget {
       await ref.read(scheduleServiceProvider).postponeWorkout(entry.date);
 
       await syncWorkoutNotifications(ref);
+      await syncHomeWidget(ref);
 
       if (!context.mounted) {
         return;

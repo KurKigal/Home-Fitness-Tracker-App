@@ -6,6 +6,7 @@ import 'core/constants/app_constants.dart';
 import 'data/repositories/workout_repository.dart';
 import 'services/database_service.dart';
 import 'services/notification_service.dart';
+import 'services/widget_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -21,6 +22,8 @@ Future<void> main() async {
   await repository.ensureContinuousScheduleThrough(
     DateTime.now().add(const Duration(days: AppConstants.scheduleHorizonDays)),
   );
+
+  await WidgetService.instance.sync(repository);
 
   runApp(const ProviderScope(child: FitnessApp()));
 }

@@ -7,6 +7,7 @@ import '../data/models/workout.dart';
 import '../data/repositories/workout_repository.dart';
 import '../services/schedule_service.dart';
 import '../services/notification_service.dart';
+import '../services/widget_service.dart';
 
 final workoutRepositoryProvider = Provider<WorkoutRepository>(
   (ref) => WorkoutRepository(),
@@ -153,4 +154,16 @@ Future<void> syncWorkoutNotifications(WidgetRef ref) async {
     repository: repository,
     settings: settings,
   );
+}
+
+final widgetServiceProvider = Provider<WidgetService>(
+  (ref) => WidgetService.instance,
+);
+
+Future<void> syncHomeWidget(WidgetRef ref) async {
+  final repository = ref.read(workoutRepositoryProvider);
+
+  final widgetService = ref.read(widgetServiceProvider);
+
+  await widgetService.sync(repository);
 }

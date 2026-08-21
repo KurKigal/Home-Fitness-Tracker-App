@@ -209,6 +209,9 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           .read(workoutRepositoryProvider)
           .deleteWorkoutProgress(widget.entry.id);
 
+      await syncWorkoutNotifications(ref);
+      await syncHomeWidget(ref);
+
       ref.invalidate(todayEntryProvider);
       ref.invalidate(todayWorkoutProvider);
       ref.invalidate(calendarEntriesProvider);
