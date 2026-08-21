@@ -367,6 +367,10 @@ class _ReminderTimeTile extends ConsumerWidget {
           return;
         }
 
+        if (!context.mounted) {
+          return;
+        }
+
         ref
             .read(appSettingsProvider.notifier)
             .setReminderTime(hour: selected.hour, minute: selected.minute);

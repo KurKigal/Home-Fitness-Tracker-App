@@ -81,9 +81,16 @@ class _NotificationBootstrapState
       return;
     }
 
+    final currentSettings = ref.read(appSettingsProvider);
+
+    if (!currentSettings.notificationsEnabled) {
+      await notificationService.cancelAll();
+      return;
+    }
+
     await notificationService.syncSchedule(
       repository: ref.read(workoutRepositoryProvider),
-      settings: settings,
+      settings: currentSettings,
     );
   }
 

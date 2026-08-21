@@ -6,8 +6,13 @@ class ScheduleService {
   ScheduleService(this._repository);
 
   final WorkoutRepository _repository;
+  bool _isMutating = false;
 
-  Future<void> completeWorkout(DateTime date, {DateTime? completedAt}) async {
+  Future<void> completeWorkout(DateTime date, {DateTime? completedAt}) {
+    return _runMutation(() => _completeWorkout(date, completedAt: completedAt));
+  }
+
+  Future<void> _completeWorkout(DateTime date, {DateTime? completedAt}) async {
     final normalizedDate = normalizeDate(date);
 
     final entry = _repository.getEntryForDate(normalizedDate);
@@ -42,7 +47,11 @@ class ScheduleService {
     await _repository.saveEntry(updatedEntry);
   }
 
-  Future<void> skipWorkout(DateTime date) async {
+  Future<void> skipWorkout(DateTime date) {
+    return _runMutation(() => _skipWorkout(date));
+  }
+
+  Future<void> _skipWorkout(DateTime date) async {
     final normalizedDate = normalizeDate(date);
 
     final entry = _repository.getEntryForDate(normalizedDate);
@@ -77,7 +86,11 @@ class ScheduleService {
     await _repository.saveEntry(updatedEntry);
   }
 
-  Future<void> postponeWorkout(DateTime date) async {
+  Future<void> postponeWorkout(DateTime date) {
+    return _runMutation(() => _postponeWorkout(date));
+  }
+
+  Future<void> _postponeWorkout(DateTime date) async {
     final normalizedDate = normalizeDate(date);
 
     final entry = _repository.getEntryForDate(normalizedDate);
@@ -133,6 +146,10 @@ class ScheduleService {
       );
 
       await _repository.saveEntry(shiftedEntry);
+      await _repository.moveWorkoutProgress(
+        fromScheduleEntryId: scheduleEntry.id,
+        toScheduleEntryId: shiftedEntry.id,
+      );
     }
 
     // Eski günü tarihçede "Ertelendi" olarak bırakıyoruz.
@@ -144,5 +161,19 @@ class ScheduleService {
     );
 
     await _repository.saveEntry(postponedEntry);
+  }
+
+  Future<void> _runMutation(Future<void> Function() operation) async {
+    if (_isMutating) {
+      throw StateError('Başka bir antrenman işlemi devam ediyor.');
+    }
+
+    _isMutating = true;
+
+    try {
+      await operation();
+    } finally {
+      _isMutating = false;
+    }
   }
 }

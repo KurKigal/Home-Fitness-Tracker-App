@@ -36,8 +36,12 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
 
     _startedAt = saved?.startedAt ?? DateTime.now();
 
-    if (saved != null) {
-      _completedItems.addAll(saved.completedItemIds);
+    if (saved != null && saved.workoutId == widget.workout.id) {
+      final validItemIds = _itemIds.toSet();
+
+      _completedItems.addAll(
+        saved.completedItemIds.where(validItemIds.contains),
+      );
     }
   }
 
@@ -172,6 +176,10 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
   }
 
   Future<void> _toggleItem(String id) async {
+    if (_finishing || !_itemIds.contains(id)) {
+      return;
+    }
+
     setState(() {
       if (_completedItems.contains(id)) {
         _completedItems.remove(id);
@@ -209,14 +217,17 @@ class _WorkoutScreenState extends ConsumerState<WorkoutScreen> {
           .read(workoutRepositoryProvider)
           .deleteWorkoutProgress(widget.entry.id);
 
-      await syncWorkoutNotifications(ref);
-      await syncHomeWidget(ref);
+      if (!mounted) {
+        return;
+      }
 
       ref.invalidate(todayEntryProvider);
       ref.invalidate(todayWorkoutProvider);
       ref.invalidate(calendarEntriesProvider);
       ref.invalidate(nextTrainingEntryProvider);
       ref.invalidate(nextTrainingWorkoutProvider);
+
+      await syncWorkoutIntegrations(ref);
 
       if (!mounted) {
         return;

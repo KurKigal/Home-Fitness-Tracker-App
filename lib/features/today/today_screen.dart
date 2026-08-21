@@ -9,6 +9,7 @@ import '../../data/models/workout.dart';
 import '../../providers/app_providers.dart';
 import '../../shared/widgets/neu_button.dart';
 import '../../shared/widgets/neu_card.dart';
+import '../../shared/widgets/workout_details_sheet.dart';
 import '../workout/workout_screen.dart';
 import 'widgets/today_workout_card.dart';
 
@@ -129,7 +130,16 @@ class _PreStartContent extends ConsumerWidget {
           const SizedBox(height: 28),
           Text('İlk Antrenman', style: Theme.of(context).textTheme.titleLarge),
           const SizedBox(height: 14),
-          TodayWorkoutCard(workout: nextWorkout),
+          TodayWorkoutCard(
+            workout: nextWorkout,
+            onTap: () {
+              showWorkoutDetailsSheet(
+                context: context,
+                date: nextEntry.date,
+                workout: nextWorkout,
+              );
+            },
+          ),
         ],
       ],
     );
@@ -179,7 +189,16 @@ class _TodayContent extends ConsumerWidget {
 
         const SizedBox(height: 14),
 
-        TodayWorkoutCard(workout: workout),
+        TodayWorkoutCard(
+          workout: workout,
+          onTap: () {
+            showWorkoutDetailsSheet(
+              context: context,
+              date: entry.date,
+              workout: workout,
+            );
+          },
+        ),
 
         if (entry.status == ScheduleStatus.planned) ...[
           const SizedBox(height: 28),
@@ -306,14 +325,12 @@ class _TodayContent extends ConsumerWidget {
     try {
       await ref.read(scheduleServiceProvider).skipWorkout(entry.date);
 
-      await syncWorkoutNotifications(ref);
-      await syncHomeWidget(ref);
-
       if (!context.mounted) {
         return;
       }
 
       _refreshSchedule(ref);
+      await syncWorkoutIntegrations(ref);
     } on StateError catch (error) {
       if (!context.mounted) {
         return;
@@ -362,14 +379,12 @@ class _TodayContent extends ConsumerWidget {
     try {
       await ref.read(scheduleServiceProvider).postponeWorkout(entry.date);
 
-      await syncWorkoutNotifications(ref);
-      await syncHomeWidget(ref);
-
       if (!context.mounted) {
         return;
       }
 
       _refreshSchedule(ref);
+      await syncWorkoutIntegrations(ref);
     } on StateError catch (error) {
       if (!context.mounted) {
         return;

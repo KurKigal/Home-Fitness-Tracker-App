@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fitnesstracker/core/utils/date_utils.dart';
 import 'package:fitnesstracker/data/models/schedule_entry.dart';
 import 'package:fitnesstracker/data/models/workout.dart';
+import 'package:fitnesstracker/data/models/workout_progress.dart';
 import 'package:fitnesstracker/data/repositories/workout_repository.dart';
 import 'package:fitnesstracker/services/schedule_service.dart';
 
@@ -114,6 +115,31 @@ void main() {
       expect(shiftedEntry?.originalDate, DateTime(2026, 9, 1));
     });
 
+    test('postponed workout moves saved progress to shifted entry', () async {
+      final startedAt = DateTime(2026, 9, 1, 18);
+
+      await repository.saveWorkoutProgress(
+        WorkoutProgress(
+          scheduleEntryId: '2026-09-01',
+          workoutId: 'strength_a',
+          completedItemIds: const {'squat'},
+          startedAt: startedAt,
+          updatedAt: startedAt,
+        ),
+      );
+
+      await service.postponeWorkout(DateTime(2026, 9, 1));
+
+      expect(repository.getWorkoutProgress('2026-09-01'), isNull);
+
+      final shiftedProgress = repository.getWorkoutProgress('2026-09-02');
+
+      expect(shiftedProgress?.scheduleEntryId, '2026-09-02');
+      expect(shiftedProgress?.workoutId, 'strength_a');
+      expect(shiftedProgress?.completedItemIds, {'squat'});
+      expect(shiftedProgress?.startedAt, startedAt);
+    });
+
     test('rest day cannot be postponed', () async {
       expect(
         () => service.postponeWorkout(DateTime(2026, 9, 3)),
@@ -147,6 +173,8 @@ class FakeWorkoutRepository extends WorkoutRepository {
 
   final Map<String, ScheduleEntry> _entries;
 
+  final Map<String, WorkoutProgress> _progress = {};
+
   @override
   Workout? getWorkout(String workoutId) {
     return _workouts[workoutId];
@@ -173,5 +201,20 @@ class FakeWorkoutRepository extends WorkoutRepository {
   @override
   Future<void> deleteEntry(DateTime date) async {
     _entries.remove(dateKey(date));
+  }
+
+  @override
+  WorkoutProgress? getWorkoutProgress(String scheduleEntryId) {
+    return _progress[scheduleEntryId];
+  }
+
+  @override
+  Future<void> saveWorkoutProgress(WorkoutProgress progress) async {
+    _progress[progress.scheduleEntryId] = progress;
+  }
+
+  @override
+  Future<void> deleteWorkoutProgress(String scheduleEntryId) async {
+    _progress.remove(scheduleEntryId);
   }
 }

@@ -17,6 +17,7 @@ class NotificationService {
       FlutterLocalNotificationsPlugin();
 
   bool _initialized = false;
+  Future<void> _operationQueue = Future<void>.value();
 
   static const _channelId = 'workout_reminders';
   static const _channelName = 'Antrenman Hatırlatıcıları';
@@ -64,11 +65,20 @@ class NotificationService {
     return granted ?? true;
   }
 
-  Future<void> cancelAll() async {
-    await _plugin.cancelAll();
+  Future<void> cancelAll() {
+    return _enqueue(_plugin.cancelAll);
   }
 
   Future<void> syncSchedule({
+    required WorkoutRepository repository,
+    required AppSettings settings,
+  }) {
+    return _enqueue(
+      () => _syncSchedule(repository: repository, settings: settings),
+    );
+  }
+
+  Future<void> _syncSchedule({
     required WorkoutRepository repository,
     required AppSettings settings,
   }) async {
@@ -76,7 +86,7 @@ class NotificationService {
       return;
     }
 
-    await cancelAll();
+    await _plugin.cancelAll();
 
     if (!settings.notificationsEnabled) {
       return;
@@ -137,5 +147,16 @@ class NotificationService {
 
   int _notificationId(DateTime date) {
     return (date.year * 10000) + (date.month * 100) + date.day;
+  }
+
+  Future<void> _enqueue(Future<void> Function() operation) {
+    final result = _operationQueue.then((_) => operation());
+
+    _operationQueue = result.then<void>(
+      (_) {},
+      onError: (Object _, StackTrace _) {},
+    );
+
+    return result;
   }
 }

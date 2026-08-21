@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/utils/date_utils.dart';
@@ -77,6 +78,7 @@ class SettingsController extends StateNotifier<AppSettings> {
   final WorkoutRepository _repository;
 
   final NotificationService _notificationService;
+  int _notificationRequestId = 0;
 
   Future<void> setThemeMode(String themeMode) async {
     final updated = state.copyWith(themeMode: themeMode);
@@ -87,8 +89,14 @@ class SettingsController extends StateNotifier<AppSettings> {
   }
 
   Future<void> setNotificationsEnabled(bool enabled) async {
+    final requestId = ++_notificationRequestId;
+
     if (enabled) {
       final granted = await _notificationService.requestPermission();
+
+      if (requestId != _notificationRequestId) {
+        return;
+      }
 
       if (!granted) {
         final updated = state.copyWith(notificationsEnabled: false);
@@ -101,6 +109,10 @@ class SettingsController extends StateNotifier<AppSettings> {
 
         return;
       }
+    }
+
+    if (requestId != _notificationRequestId) {
+      return;
     }
 
     final updated = state.copyWith(notificationsEnabled: enabled);
@@ -139,31 +151,30 @@ final notificationServiceProvider = Provider<NotificationService>(
   (ref) => NotificationService.instance,
 );
 
-Future<void> syncWorkoutNotifications(WidgetRef ref) async {
+Future<void> syncWorkoutIntegrations(WidgetRef ref) async {
   final settings = ref.read(appSettingsProvider);
+  final repository = ref.read(workoutRepositoryProvider);
+  final notificationService = ref.read(notificationServiceProvider);
+  final widgetService = ref.read(widgetServiceProvider);
 
-  if (!settings.notificationsEnabled) {
-    return;
+  if (settings.notificationsEnabled) {
+    try {
+      await notificationService.syncSchedule(
+        repository: repository,
+        settings: settings,
+      );
+    } catch (error, stackTrace) {
+      debugPrint('Workout notification sync failed: $error\n$stackTrace');
+    }
   }
 
-  final repository = ref.read(workoutRepositoryProvider);
-
-  final notificationService = ref.read(notificationServiceProvider);
-
-  await notificationService.syncSchedule(
-    repository: repository,
-    settings: settings,
-  );
+  try {
+    await widgetService.sync(repository);
+  } catch (error, stackTrace) {
+    debugPrint('Home widget sync failed: $error\n$stackTrace');
+  }
 }
 
 final widgetServiceProvider = Provider<WidgetService>(
   (ref) => WidgetService.instance,
 );
-
-Future<void> syncHomeWidget(WidgetRef ref) async {
-  final repository = ref.read(workoutRepositoryProvider);
-
-  final widgetService = ref.read(widgetServiceProvider);
-
-  await widgetService.sync(repository);
-}

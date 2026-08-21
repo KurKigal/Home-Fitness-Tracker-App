@@ -28,11 +28,12 @@ class WorkoutProgress {
   }
 
   WorkoutProgress copyWith({
+    String? scheduleEntryId,
     Set<String>? completedItemIds,
     DateTime? updatedAt,
   }) {
     return WorkoutProgress(
-      scheduleEntryId: scheduleEntryId,
+      scheduleEntryId: scheduleEntryId ?? this.scheduleEntryId,
       workoutId: workoutId,
       completedItemIds: completedItemIds ?? this.completedItemIds,
       startedAt: startedAt,

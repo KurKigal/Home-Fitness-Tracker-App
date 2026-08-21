@@ -5,13 +5,19 @@ import '../../../data/models/workout.dart';
 import '../../../shared/widgets/neu_card.dart';
 
 class TodayWorkoutCard extends StatelessWidget {
-  const TodayWorkoutCard({required this.workout, super.key});
+  const TodayWorkoutCard({
+    required this.workout,
+    required this.onTap,
+    super.key,
+  });
 
   final Workout workout;
+  final VoidCallback onTap;
 
   @override
   Widget build(BuildContext context) {
     return NeuCard(
+      onTap: onTap,
       padding: const EdgeInsets.all(24),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

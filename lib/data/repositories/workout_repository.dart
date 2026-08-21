@@ -219,4 +219,20 @@ class WorkoutRepository {
   Future<void> deleteWorkoutProgress(String scheduleEntryId) async {
     await DatabaseService.workoutProgressBox.delete(scheduleEntryId);
   }
+
+  Future<void> moveWorkoutProgress({
+    required String fromScheduleEntryId,
+    required String toScheduleEntryId,
+  }) async {
+    final progress = getWorkoutProgress(fromScheduleEntryId);
+
+    if (progress == null || fromScheduleEntryId == toScheduleEntryId) {
+      return;
+    }
+
+    await saveWorkoutProgress(
+      progress.copyWith(scheduleEntryId: toScheduleEntryId),
+    );
+    await deleteWorkoutProgress(fromScheduleEntryId);
+  }
 }
