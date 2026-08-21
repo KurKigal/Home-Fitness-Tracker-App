@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:hive_ce_flutter/hive_ce_flutter.dart';
 
 import 'app.dart';
+import 'data/repositories/workout_repository.dart';
+import 'services/database_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
-  await Hive.initFlutter();
+  await DatabaseService.initialize();
 
-  runApp(
-    const ProviderScope(
-      child: FitnessApp(),
-    ),
-  );
+  final repository = WorkoutRepository();
+
+  await repository.seedInitialDataIfNeeded();
+
+  runApp(const ProviderScope(child: FitnessApp()));
 }

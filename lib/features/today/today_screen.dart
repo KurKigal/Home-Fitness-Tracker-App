@@ -10,10 +10,7 @@ class TodayScreen extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(20),
       children: [
-        Text(
-          'Bugün',
-          style: Theme.of(context).textTheme.headlineLarge,
-        ),
+        Text('Bugün', style: Theme.of(context).textTheme.headlineLarge),
         const SizedBox(height: 8),
         Text(
           'Bugünkü antrenmanın',

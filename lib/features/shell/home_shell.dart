@@ -14,20 +14,13 @@ class HomeShell extends StatefulWidget {
 class _HomeShellState extends State<HomeShell> {
   int _selectedIndex = 0;
 
-  static const _screens = [
-    TodayScreen(),
-    CalendarScreen(),
-    SettingsScreen(),
-  ];
+  static const _screens = [TodayScreen(), CalendarScreen(), SettingsScreen()];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: IndexedStack(
-          index: _selectedIndex,
-          children: _screens,
-        ),
+        child: IndexedStack(index: _selectedIndex, children: _screens),
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _selectedIndex,
