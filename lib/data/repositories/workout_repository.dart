@@ -6,6 +6,7 @@ import '../models/schedule_entry.dart';
 import '../models/workout.dart';
 import '../seed/continuous_program.dart';
 import '../seed/initial_program.dart';
+import '../models/workout_progress.dart';
 
 class WorkoutRepository {
   Future<void> seedInitialDataIfNeeded() async {
@@ -196,5 +197,26 @@ class WorkoutRepository {
       AppConstants.appSettingsKey,
       settings.toMap(),
     );
+  }
+
+  WorkoutProgress? getWorkoutProgress(String scheduleEntryId) {
+    final raw = DatabaseService.workoutProgressBox.get(scheduleEntryId);
+
+    if (raw == null) {
+      return null;
+    }
+
+    return WorkoutProgress.fromMap(Map<dynamic, dynamic>.from(raw as Map));
+  }
+
+  Future<void> saveWorkoutProgress(WorkoutProgress progress) async {
+    await DatabaseService.workoutProgressBox.put(
+      progress.scheduleEntryId,
+      progress.toMap(),
+    );
+  }
+
+  Future<void> deleteWorkoutProgress(String scheduleEntryId) async {
+    await DatabaseService.workoutProgressBox.delete(scheduleEntryId);
   }
 }

@@ -9,6 +9,7 @@ import '../../data/models/workout.dart';
 import '../../providers/app_providers.dart';
 import '../../shared/widgets/neu_button.dart';
 import '../../shared/widgets/neu_card.dart';
+import '../workout/workout_screen.dart';
 import 'widgets/today_workout_card.dart';
 
 class TodayScreen extends ConsumerWidget {
@@ -184,11 +185,11 @@ class _TodayContent extends ConsumerWidget {
           const SizedBox(height: 28),
 
           NeuButton(
-            label: 'Antrenmanı Tamamla',
-            icon: Icons.check_rounded,
+            label: 'Antrenmana Başla',
+            icon: Icons.play_arrow_rounded,
             style: NeuButtonStyle.primary,
             onPressed: () {
-              _completeWorkout(context, ref);
+              _openWorkout(context, ref);
             },
           ),
 
@@ -250,25 +251,19 @@ class _TodayContent extends ConsumerWidget {
     );
   }
 
-  Future<void> _completeWorkout(BuildContext context, WidgetRef ref) async {
-    try {
-      await ref.read(scheduleServiceProvider).completeWorkout(entry.date);
+  Future<void> _openWorkout(BuildContext context, WidgetRef ref) async {
+    final completed = await Navigator.of(context).push<bool>(
+      MaterialPageRoute(
+        builder: (_) => WorkoutScreen(entry: entry, workout: workout),
+      ),
+    );
 
-      if (!context.mounted) {
-        return;
-      }
+    if (!context.mounted) {
+      return;
+    }
 
+    if (completed == true) {
       _refreshSchedule(ref);
-
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Antrenman tamamlandı.')));
-    } on StateError catch (error) {
-      if (!context.mounted) {
-        return;
-      }
-
-      _showError(context, error.message);
     }
   }
 

@@ -6,6 +6,7 @@ abstract final class DatabaseService {
   static Box<dynamic>? _workoutsBox;
   static Box<dynamic>? _scheduleBox;
   static Box<dynamic>? _settingsBox;
+  static Box<dynamic>? _workoutProgressBox;
 
   static Future<void> initialize() async {
     await Hive.initFlutter();
@@ -15,6 +16,10 @@ abstract final class DatabaseService {
     _scheduleBox = await Hive.openBox<dynamic>(AppConstants.scheduleBox);
 
     _settingsBox = await Hive.openBox<dynamic>(AppConstants.settingsBox);
+
+    _workoutProgressBox = await Hive.openBox<dynamic>(
+      AppConstants.workoutProgressBox,
+    );
   }
 
   static Box<dynamic> get workoutsBox {
@@ -39,6 +44,16 @@ abstract final class DatabaseService {
 
   static Box<dynamic> get settingsBox {
     final box = _settingsBox;
+
+    if (box == null) {
+      throw StateError('DatabaseService.initialize() çağrılmadı.');
+    }
+
+    return box;
+  }
+
+  static Box<dynamic> get workoutProgressBox {
+    final box = _workoutProgressBox;
 
     if (box == null) {
       throw StateError('DatabaseService.initialize() çağrılmadı.');
