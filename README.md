@@ -33,9 +33,9 @@ Tüm veriler cihaz üzerinde tutulur. Hesap oluşturma, sunucu, bulut senkroniza
 
 <div align="center">
 
-<img src="docs/screenshots/today.png" width="280" alt="Bugün Ekranı">
+<img src="docs/screenshots/today.jpg" width="280" alt="Bugün Ekranı">
 &nbsp;&nbsp;&nbsp;
-<img src="docs/screenshots/calendar.png" width="280" alt="Takvim Ekranı">
+<img src="docs/screenshots/calendar.jpg" width="280" alt="Takvim Ekranı">
 
 </div>
 
