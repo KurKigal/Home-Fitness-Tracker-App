@@ -59,6 +59,32 @@ class WorkoutRepository {
     return ScheduleEntry.fromMap(Map<dynamic, dynamic>.from(raw as Map));
   }
 
+  ScheduleEntry? getNextTrainingEntry(DateTime from) {
+    final normalizedFrom = normalizeDate(from);
+
+    for (final entry in getAllScheduleEntries()) {
+      final entryDate = normalizeDate(entry.date);
+
+      if (entryDate.isBefore(normalizedFrom)) {
+        continue;
+      }
+
+      if (entry.status != ScheduleStatus.planned) {
+        continue;
+      }
+
+      final workout = getWorkout(entry.workoutId);
+
+      if (workout == null || workout.isRest) {
+        continue;
+      }
+
+      return entry;
+    }
+
+    return null;
+  }
+
   List<ScheduleEntry> getAllScheduleEntries() {
     final entries = DatabaseService.scheduleBox.values
         .map(
