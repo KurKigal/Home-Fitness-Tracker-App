@@ -89,9 +89,23 @@ class _CalendarScreenState extends ConsumerState<CalendarScreen> {
     });
   }
 
-  void _nextMonth() {
+  Future<void> _nextMonth() async {
+    final nextMonth = DateTime(_visibleMonth.year, _visibleMonth.month + 1);
+
+    final endOfNextMonth = DateTime(nextMonth.year, nextMonth.month + 1, 0);
+
+    await ref
+        .read(workoutRepositoryProvider)
+        .ensureContinuousScheduleThrough(endOfNextMonth);
+
+    ref.invalidate(calendarEntriesProvider);
+
+    if (!mounted) {
+      return;
+    }
+
     setState(() {
-      _visibleMonth = DateTime(_visibleMonth.year, _visibleMonth.month + 1);
+      _visibleMonth = nextMonth;
     });
   }
 

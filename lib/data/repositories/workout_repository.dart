@@ -4,6 +4,7 @@ import '../../services/database_service.dart';
 import '../models/app_settings.dart';
 import '../models/schedule_entry.dart';
 import '../models/workout.dart';
+import '../seed/continuous_program.dart';
 import '../seed/initial_program.dart';
 
 class WorkoutRepository {
@@ -17,11 +18,21 @@ class WorkoutRepository {
       return;
     }
 
-    for (final workout in InitialProgram.workouts) {
+    // Workout tanımları statik olduğu için güvenle güncellenebilir.
+    for (final workout in [
+      ...InitialProgram.workouts,
+      ...ContinuousProgram.workouts,
+    ]) {
       await DatabaseService.workoutsBox.put(workout.id, workout.toMap());
     }
 
+    // Takvim kayıtları kullanıcı geçmişidir.
+    // Var olan kayıtların üstüne ASLA yazmıyoruz.
     for (final entry in InitialProgram.schedule) {
+      if (DatabaseService.scheduleBox.containsKey(entry.id)) {
+        continue;
+      }
+
       await DatabaseService.scheduleBox.put(entry.id, entry.toMap());
     }
 
@@ -37,6 +48,59 @@ class WorkoutRepository {
       AppConstants.seedVersionKey,
       AppConstants.seedVersion,
     );
+  }
+
+  Future<void> ensureContinuousScheduleThrough(DateTime endDate) async {
+    final normalizedEnd = normalizeDate(endDate);
+
+    if (normalizedEnd.isBefore(AppConstants.continuousProgramStart)) {
+      return;
+    }
+
+    final entries = getAllScheduleEntries();
+
+    if (entries.isEmpty) {
+      throw StateError(
+        'Sürekli program oluşturulmadan önce başlangıç programı hazırlanmalıdır.',
+      );
+    }
+
+    final latestEntry = entries.last;
+
+    var actualDate = normalizeDate(
+      latestEntry.date,
+    ).add(const Duration(days: 1));
+
+    var logicalDate = normalizeDate(
+      latestEntry.originalDate,
+    ).add(const Duration(days: 1));
+
+    if (actualDate.isAfter(normalizedEnd)) {
+      return;
+    }
+
+    while (!actualDate.isAfter(normalizedEnd)) {
+      if (logicalDate.isBefore(AppConstants.continuousProgramStart)) {
+        actualDate = actualDate.add(const Duration(days: 1));
+
+        logicalDate = logicalDate.add(const Duration(days: 1));
+
+        continue;
+      }
+
+      final entry = ContinuousProgram.buildEntry(
+        actualDate: actualDate,
+        logicalDate: logicalDate,
+      );
+
+      if (!DatabaseService.scheduleBox.containsKey(entry.id)) {
+        await saveEntry(entry);
+      }
+
+      actualDate = actualDate.add(const Duration(days: 1));
+
+      logicalDate = logicalDate.add(const Duration(days: 1));
+    }
   }
 
   Workout? getWorkout(String workoutId) {
@@ -99,10 +163,11 @@ class WorkoutRepository {
   }
 
   List<ScheduleEntry> getEntriesBetween(DateTime start, DateTime end) {
+    final normalizedStart = normalizeDate(start);
+    final normalizedEnd = normalizeDate(end);
+
     return getAllScheduleEntries().where((entry) {
       final date = normalizeDate(entry.date);
-      final normalizedStart = normalizeDate(start);
-      final normalizedEnd = normalizeDate(end);
 
       return !date.isBefore(normalizedStart) && !date.isAfter(normalizedEnd);
     }).toList();
