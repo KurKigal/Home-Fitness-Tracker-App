@@ -7,6 +7,7 @@ import '../../core/utils/date_utils.dart';
 import '../../data/models/schedule_entry.dart';
 import '../../data/models/workout.dart';
 import '../../providers/app_providers.dart';
+import '../../shared/widgets/neu_button.dart';
 import '../../shared/widgets/neu_card.dart';
 import 'widgets/today_workout_card.dart';
 
@@ -134,14 +135,14 @@ class _PreStartContent extends ConsumerWidget {
   }
 }
 
-class _TodayContent extends StatelessWidget {
+class _TodayContent extends ConsumerWidget {
   const _TodayContent({required this.entry, required this.workout});
 
   final ScheduleEntry entry;
   final Workout workout;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     if (workout.isRest) {
       return NeuCard(
         child: Column(
@@ -174,9 +175,255 @@ class _TodayContent extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _StatusLabel(status: entry.status),
+
         const SizedBox(height: 14),
+
         TodayWorkoutCard(workout: workout),
+
+        if (entry.status == ScheduleStatus.planned) ...[
+          const SizedBox(height: 28),
+
+          NeuButton(
+            label: 'Antrenmanı Tamamla',
+            icon: Icons.check_rounded,
+            style: NeuButtonStyle.primary,
+            onPressed: () {
+              _completeWorkout(context, ref);
+            },
+          ),
+
+          const SizedBox(height: 14),
+
+          Row(
+            children: [
+              Expanded(
+                child: NeuButton(
+                  label: 'Ertele',
+                  icon: Icons.update_rounded,
+                  onPressed: () {
+                    _confirmPostpone(context, ref);
+                  },
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: NeuButton(
+                  label: 'Atla',
+                  icon: Icons.skip_next_rounded,
+                  style: NeuButtonStyle.danger,
+                  onPressed: () {
+                    _confirmSkip(context, ref);
+                  },
+                ),
+              ),
+            ],
+          ),
+        ],
+
+        if (entry.status == ScheduleStatus.completed) ...[
+          const SizedBox(height: 22),
+          const _ResultMessage(
+            icon: Icons.check_circle_rounded,
+            color: AppColors.success,
+            message: 'Bugünkü antrenman tamamlandı.',
+          ),
+        ],
+
+        if (entry.status == ScheduleStatus.skipped) ...[
+          const SizedBox(height: 22),
+          const _ResultMessage(
+            icon: Icons.skip_next_rounded,
+            color: AppColors.danger,
+            message: 'Bugünkü antrenman atlandı.',
+          ),
+        ],
+
+        if (entry.status == ScheduleStatus.postponed) ...[
+          const SizedBox(height: 22),
+          const _ResultMessage(
+            icon: Icons.update_rounded,
+            color: AppColors.warning,
+            message: 'Antrenman yarına taşındı ve program 1 gün kaydırıldı.',
+          ),
+        ],
       ],
+    );
+  }
+
+  Future<void> _completeWorkout(BuildContext context, WidgetRef ref) async {
+    try {
+      await ref.read(scheduleServiceProvider).completeWorkout(entry.date);
+
+      if (!context.mounted) {
+        return;
+      }
+
+      _refreshSchedule(ref);
+
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Antrenman tamamlandı.')));
+    } on StateError catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+
+      _showError(context, error.message);
+    }
+  }
+
+  Future<void> _confirmSkip(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Antrenmanı atla?'),
+          content: const Text(
+            'Bugünkü antrenman atlandı olarak işaretlenecek. '
+            'Takvimdeki diğer günler değişmeyecek.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Vazgeç'),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Atla'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    if (!context.mounted) {
+      return;
+    }
+
+    try {
+      await ref.read(scheduleServiceProvider).skipWorkout(entry.date);
+
+      if (!context.mounted) {
+        return;
+      }
+
+      _refreshSchedule(ref);
+    } on StateError catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+
+      _showError(context, error.message);
+    }
+  }
+
+  Future<void> _confirmPostpone(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        return AlertDialog(
+          title: const Text('Antrenmanı ertele?'),
+          content: const Text(
+            'Bugünkü antrenman yarına taşınacak. '
+            'Bugünden sonraki programın tamamı 1 gün ileri kayacak.',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, false);
+              },
+              child: const Text('Vazgeç'),
+            ),
+            FilledButton(
+              onPressed: () {
+                Navigator.pop(dialogContext, true);
+              },
+              child: const Text('Ertele'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (confirmed != true) {
+      return;
+    }
+
+    if (!context.mounted) {
+      return;
+    }
+
+    try {
+      await ref.read(scheduleServiceProvider).postponeWorkout(entry.date);
+
+      if (!context.mounted) {
+        return;
+      }
+
+      _refreshSchedule(ref);
+    } on StateError catch (error) {
+      if (!context.mounted) {
+        return;
+      }
+
+      _showError(context, error.message);
+    }
+  }
+
+  void _refreshSchedule(WidgetRef ref) {
+    ref.invalidate(todayEntryProvider);
+    ref.invalidate(todayWorkoutProvider);
+
+    ref.invalidate(calendarEntriesProvider);
+
+    ref.invalidate(nextTrainingEntryProvider);
+    ref.invalidate(nextTrainingWorkoutProvider);
+  }
+
+  void _showError(BuildContext context, String message) {
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+}
+
+class _ResultMessage extends StatelessWidget {
+  const _ResultMessage({
+    required this.icon,
+    required this.color,
+    required this.message,
+  });
+
+  final IconData icon;
+  final Color color;
+  final String message;
+
+  @override
+  Widget build(BuildContext context) {
+    return NeuCard(
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        children: [
+          Icon(icon, color: color),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Text(
+              message,
+              style: Theme.of(
+                context,
+              ).textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.w600),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

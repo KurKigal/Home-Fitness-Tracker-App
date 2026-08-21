@@ -4,6 +4,7 @@ import '../core/utils/date_utils.dart';
 import '../data/models/schedule_entry.dart';
 import '../data/models/workout.dart';
 import '../data/repositories/workout_repository.dart';
+import '../services/schedule_service.dart';
 
 final workoutRepositoryProvider = Provider<WorkoutRepository>(
   (ref) => WorkoutRepository(),
@@ -49,4 +50,10 @@ final nextTrainingWorkoutProvider = Provider<Workout?>((ref) {
   }
 
   return ref.watch(workoutByIdProvider(entry.workoutId));
+});
+
+final scheduleServiceProvider = Provider<ScheduleService>((ref) {
+  final repository = ref.watch(workoutRepositoryProvider);
+
+  return ScheduleService(repository);
 });
