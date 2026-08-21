@@ -1,6 +1,7 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/utils/date_utils.dart';
+import '../data/models/app_settings.dart';
 import '../data/models/schedule_entry.dart';
 import '../data/models/workout.dart';
 import '../data/repositories/workout_repository.dart';
@@ -57,3 +58,40 @@ final scheduleServiceProvider = Provider<ScheduleService>((ref) {
 
   return ScheduleService(repository);
 });
+
+final appSettingsProvider =
+    StateNotifierProvider<SettingsController, AppSettings>((ref) {
+      final repository = ref.watch(workoutRepositoryProvider);
+
+      return SettingsController(repository);
+    });
+
+class SettingsController extends StateNotifier<AppSettings> {
+  SettingsController(this._repository) : super(_repository.getSettings());
+
+  final WorkoutRepository _repository;
+
+  Future<void> setThemeMode(String themeMode) async {
+    final updated = state.copyWith(themeMode: themeMode);
+
+    state = updated;
+
+    await _repository.saveSettings(updated);
+  }
+
+  Future<void> setNotificationsEnabled(bool enabled) async {
+    final updated = state.copyWith(notificationsEnabled: enabled);
+
+    state = updated;
+
+    await _repository.saveSettings(updated);
+  }
+
+  Future<void> setReminderTime({required int hour, required int minute}) async {
+    final updated = state.copyWith(reminderHour: hour, reminderMinute: minute);
+
+    state = updated;
+
+    await _repository.saveSettings(updated);
+  }
+}
